@@ -343,7 +343,7 @@
     <script>
         // ==================== CONFIGURACIÓN FIREBASE ====================
         // REEMPLAZÁ ESTA URL CON LA TUYA:
-        const FIREBASE_URL = 'https://TU-PROYECTO.firebaseio.com';
+        const FIREBASE_URL = 'https://marketpoint-colegio-default-rtdb.firebaseio.com';
         
         const app = firebase.initializeApp({ databaseURL: FIREBASE_URL });
         const db = firebase.database();
