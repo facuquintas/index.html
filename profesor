@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏆 MarketPoints - Profesor</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            padding-bottom: 100px;
+        }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .school-header {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .school-name { font-size: 1.8em; color: #333; font-weight: bold; }
+        .teacher-info { color: #666; font-size: 1.1em; margin-top: 5px; }
+        .sync-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .sync-badge.online { background: #d4edda; color: #155724; }
+        .sync-badge.offline { background: #f8d7da; color: #721c24; }
+        .course-selector {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        .course-tabs { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px; }
+        .course-tab {
+            padding: 10px 20px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .course-tab.active { background: #667eea; color: white; }
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            background: rgba(102,126,234,0.9);
+            padding: 10px;
+            border-radius: 15px;
+        }
+        .nav-tab {
+            flex: 1;
+            min-width: 80px;
+            padding: 12px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 10px;
+        }
+        .nav-tab.active { background: white; color: #667eea; }
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        .card h2 { color: #333; margin-bottom: 20px; font-size: 1.3em; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: #555; font-weight: 600; }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+        }
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .btn-success { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; }
+        .btn-danger { background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%); color: white; }
+        .student-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; margin-top: 20px; }
+        .student-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+            padding: 20px;
+        }
+        .student-name { font-size: 1.2em; font-weight: bold; color: #333; margin-bottom: 10px; }
+        .wallet {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 10px 0;
+        }
+        .wallet-amount { font-size: 2em; font-weight: bold; }
+        .actions { display: flex; gap: 10px; margin-top: 15px; }
+        .actions button { flex: 1; padding: 8px; font-size: 14px; border: none; border-radius: 8px; cursor: pointer; }
+        .btn-add { background: #11998e; color: white; }
+        .btn-sub { background: #eb3349; color: white; }
+        .history-list { max-height: 150px; overflow-y: auto; margin-top: 10px; font-size: 0.85em; }
+        .history-item { padding: 5px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; }
+        .history-item.positive { color: #11998e; }
+        .history-item.negative { color: #eb3349; }
+        .benefit-card {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .benefit-cost {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+        .quick-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-top: 15px; }
+        .quick-btn {
+            padding: 10px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+        .empty-state { text-align: center; padding: 40px; color: #999; }
+        .hidden { display: none !important; }
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .badge-gold { background: #ffd700; color: #333; }
+        .badge-silver { background: #c0c0c0; color: #333; }
+        .badge-bronze { background: #cd7f32; color: white; }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #333;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+        .leaderboard {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+        .leaderboard-item { display: flex; align-items: center; padding: 10px; background: rgba(255,255,255,0.2); margin-bottom: 10px; border-radius: 10px; }
+        .leaderboard-rank { font-size: 1.5em; font-weight: bold; margin-right: 15px; width: 30px; }
+        .public-link {
+            background: #e8f5e9;
+            border: 2px solid #4caf50;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .public-link input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            .student-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="school-header">
+            <div class="school-name" id="schoolNameDisplay">🏫 Mi Colegio</div>
+            <div class="teacher-info" id="teacherInfoDisplay">👨‍🏫 Profesor - Asignatura</div>
+            <div class="sync-badge online" id="syncBadge">🟢 Conectado - Sincronización en tiempo real</div>
+        </div>
+
+        <div class="public-link">
+            <strong>🔗 Link para alumnos:</strong>
+            <div style="font-size: 0.9em; color: #666; margin-top: 5px;">Compartí este link con tus alumnos para que vean sus puntos</div>
+            <input type="text" id="publicLink" readonly onclick="this.select()">
+            <button class="btn btn-success" onclick="copyLink()" style="margin-top: 10px; width: auto; padding: 8px 20px;">📋 Copiar link</button>
+        </div>
+
+        <div class="course-selector">
+            <h3 style="margin-bottom: 10px; color: #333;">📚 Seleccionar Curso</h3>
+            <div class="course-tabs" id="courseTabs"></div>
+            <div style="display: flex; gap: 10px; margin-top: 15px; padding-top: 15px; border-top: 1px dashed #ddd;">
+                <input type="text" id="newCourseName" placeholder="Ej: 1°A, 2°B" style="flex: 1;">
+                <button class="btn btn-primary" onclick="addCourse()" style="width: auto;">➕ Agregar</button>
+            </div>
+        </div>
+
+        <div id="mainContent">
+            <div class="nav-tabs">
+                <button class="nav-tab active" onclick="showTab('students')">👥 Alumnos</button>
+                <button class="nav-tab" onclick="showTab('add-points')">➕ Puntos</button>
+                <button class="nav-tab" onclick="showTab('market')">🛒 Tienda</button>
+                <button class="nav-tab" onclick="showTab('history')">📊 Historial</button>
+            </div>
+
+            <div id="students" class="tab-content">
+                <div class="card">
+                    <h2>👥 Gestión de Alumnos - <span class="current-course"></span></h2>
+                    <div class="form-group">
+                        <label>Nombre del alumno:</label>
+                        <input type="text" id="newStudentName" placeholder="Ej: María González">
+                    </div>
+                    <button class="btn btn-primary" onclick="addStudent()">➕ Agregar Alumno</button>
+                    <div class="quick-actions" style="margin-top: 15px;">
+                        <button class="quick-btn" onclick="addPointsToAll(10)">+10 a todos</button>
+                        <button class="quick-btn" onclick="addPointsToAll(5)">+5 a todos</button>
+                        <button class="quick-btn" onclick="resetAllPoints()">🔄 Resetear</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>🏅 Tabla de Líderes</h2>
+                    <div id="leaderboard" class="leaderboard"></div>
+                </div>
+
+                <div class="card">
+                    <h2>💼 Billeteras</h2>
+                    <div id="studentsList" class="student-grid"></div>
+                </div>
+            </div>
+
+            <div id="add-points" class="tab-content hidden">
+                <div class="card">
+                    <h2>➕ Registrar Actividad</h2>
+                    <div class="form-group">
+                        <label>Alumno:</label>
+                        <select id="pointStudent"><option value="">-- Seleccionar --</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Concepto:</label>
+                        <input type="text" id="pointConcept" placeholder="Ej: Tarea perfecta">
+                    </div>
+                    <div class="form-group">
+                        <label>Puntos:</label>
+                        <input type="number" id="pointAmount" value="10" min="1">
+                    </div>
+                    <button class="btn btn-success" onclick="givePoints()">✅ Otorgar</button>
+                </div>
+                <div class="card">
+                    <h2>⚡ Acciones Rápidas</h2>
+                    <div class="quick-actions">
+                        <button class="quick-btn" onclick="quickActivity('Tarea completa', 10)">📝 Tarea (10)</button>
+                        <button class="quick-btn" onclick="quickActivity('Participación', 5)">🙋 Participar (5)</button>
+                        <button class="quick-btn" onclick="quickActivity('Ayuda', 8)">🤝 Ayuda (8)</button>
+                        <button class="quick-btn" onclick="quickActivity('Teamwork', 15)">👥 Equipo (15)</button>
+                        <button class="quick-btn" onclick="quickActivity('Creatividad', 12)">💡 Crear (12)</button>
+                        <button class="quick-btn" onclick="quickActivity('Perfecto', 20)">⭐ Perfecto (20)</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="market" class="tab-content hidden">
+                <div class="card">
+                    <h2>🛒 Tienda de Beneficios</h2>
+                    <div id="benefitsList"></div>
+                    <div style="margin-top: 30px; padding-top: 20px; border-top: 2px dashed #ddd;">
+                        <h3>➕ Agregar Beneficio</h3>
+                        <div class="form-group"><label>Nombre:</label><input type="text" id="benefitName" placeholder="Ej: Saltar una pregunta"></div>
+                        <div class="form-group"><label>Descripción:</label><input type="text" id="benefitDesc" placeholder="Ej: No responder una consigna"></div>
+                        <div class="form-group"><label>Costo:</label><input type="number" id="benefitCost" value="50" min="1"></div>
+                        <button class="btn btn-primary" onclick="addBenefit()">➕ Agregar</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2>🎯 Canjear</h2>
+                    <div class="form-group"><label>Alumno:</label><select id="redeemStudent"><option value="">-- Seleccionar --</option></select></div>
+                    <div class="form-group"><label>Beneficio:</label><select id="redeemBenefit"><option value="">-- Seleccionar --</option></select></div>
+                    <button class="btn btn-warning" onclick="redeemBenefit()">🎁 Canjear</button>
+                </div>
+            </div>
+
+            <div id="history" class="tab-content hidden">
+                <div class="card">
+                    <h2>📊 Historial - <span class="current-course"></span></h2>
+                    <div id="fullHistory"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="noCourseMessage" style="text-align: center; padding: 60px 20px; color: #666; display: none;">
+            <div style="font-size: 4em; margin-bottom: 20px;">📚</div>
+            <h2>Selecciona un curso para comenzar</h2>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        // ==================== CONFIGURACIÓN FIREBASE ====================
+        // REEMPLAZÁ ESTA URL CON LA TUYA:
+        const FIREBASE_URL = 'https://TU-PROYECTO.firebaseio.com';
+        
+        const app = firebase.initializeApp({ databaseURL: FIREBASE_URL });
+        const db = firebase.database();
+
+        // Datos locales (cache)
+        let courses = [];
+        let currentCourseId = null;
+        let students = {};
+        let benefits = [
+            { id: 1, name: "🚫 Saltar una consigna", desc: "Eliminar una pregunta del examen", cost: 30 },
+            { id: 2, name: "👥 Evaluación en pareja", desc: "Hacer el examen con un compañero", cost: 50 },
+            { id: 3, name: "⏰ Tiempo extra", desc: "10 minutos adicionales", cost: 25 },
+            { id: 4, name: "📝 Pista extra", desc: "Una pista para una pregunta", cost: 15 },
+            { id: 5, name: "🎲 Segunda chance", desc: "Volver a intentar una pregunta", cost: 40 }
+        ];
+        let history = {};
+        let headerConfig = { schoolName: "🏫 Mi Colegio", teacherName: "Profesor", subject: "Asignatura" };
+
+        // Generar link público
+        function updatePublicLink() {
+            const baseUrl = window.location.href.replace('index.html', '').replace(/\/$/, '');
+            const publicUrl = baseUrl + '/alumnos.html';
+            document.getElementById('publicLink').value = publicUrl;
+        }
+
+        function copyLink() {
+            const input = document.getElementById('publicLink');
+            input.select();
+            navigator.clipboard.writeText(input.value).then(() => {
+                showToast('✅ Link copiado. Compartilo con tus alumnos.');
+            });
+        }
+
+        // Guardar en Firebase
+        function saveData() {
+            const coursesObj = {};
+            courses.forEach(c => coursesObj[c.id] = c);
+            
+            db.ref('courses').set(coursesObj);
+            db.ref('students').set(students);
+            db.ref('history').set(history);
+            db.ref('benefits').set(benefits);
+            db.ref('config').set(headerConfig);
+        }
+
+        // Cargar desde Firebase
+        function loadData() {
+            updatePublicLink();
+            
+            db.ref('courses').on('value', snap => {
+                const data = snap.val();
+                courses = data ? Object.entries(data).map(([id,c]) => ({...c,id})) : [];
+                renderCourses();
+                if (currentCourseId) renderStudents();
+            });
+            
+            db.ref('students').on('value', snap => {
+                students = snap.val() || {};
+                if (currentCourseId) {
+                    renderStudents();
+                    renderLeaderboard();
+                    updateSelects();
+                }
+            });
+            
+            db.ref('history').on('value', snap => {
+                history = snap.val() || {};
+                if (currentCourseId) renderHistory();
+            });
+            
+            db.ref('benefits').on('value', snap => {
+                const data = snap.val();
+                if (data) benefits = Object.values(data);
+                renderBenefits();
+            });
+            
+            db.ref('config').on('value', snap => {
+                const data = snap.val();
+                if (data) {
+                    headerConfig = data;
+                    document.getElementById('schoolNameDisplay').textContent = headerConfig.schoolName;
+                    document.getElementById('teacherInfoDisplay').textContent = `👨‍🏫 ${headerConfig.teacherName} - ${headerConfig.subject}`;
+                }
+            });
+        }
+
+        // UI Functions
+        function renderCourses() {
+            const container = document.getElementById('courseTabs');
+            if (!courses.length) {
+                container.innerHTML = '<p style="color:#999;text-align:center;width:100%;">No hay cursos</p>';
+                return;
+            }
+            container.innerHTML = courses.map(c => `
+                <div class="course-tab ${c.id==currentCourseId?'active':''}" onclick="selectCourse('${c.id}')">
+                    ${c.name} <span onclick="event.stopPropagation();deleteCourse('${c.id}')" style="margin-left:8px;">×</span>
+                </div>
+            `).join('');
+        }
+
+        function addCourse() {
+            const name = document.getElementById('newCourseName').value.trim();
+            if (!name) return showToast('❌ Ingresa un nombre');
+            const course = { id: Date.now().toString(), name };
+            courses.push(course);
+            students[course.id] = [];
+            history[course.id] = [];
+            saveData();
+            document.getElementById('newCourseName').value = '';
+            selectCourse(course.id);
+            showToast(`✅ Curso ${name} creado`);
+        }
+
+        function selectCourse(id) {
+            currentCourseId = id;
+            const course = courses.find(c => c.id === id);
+            document.querySelectorAll('.current-course').forEach(el => el.textContent = course.name);
+            document.getElementById('currentCourseName').textContent = course.name;
+            document.getElementById('mainContent').style.display = 'block';
+            document.getElementById('noCourseMessage').style.display = 'none';
+            renderCourses();
+            renderStudents();
+            renderLeaderboard();
+            renderHistory();
+            updateSelects();
+        }
+
+        function deleteCourse(id) {
+            const course = courses.find(c => c.id === id);
+            if (!confirm(`¿Eliminar ${course.name}?`)) return;
+            courses = courses.filter(c => c.id !== id);
+            delete students[id];
+            delete history[id];
+            if (currentCourseId === id) {
+                currentCourseId = null;
+                document.getElementById('mainContent').style.display = 'none';
+                document.getElementById('noCourseMessage').style.display = 'block';
+            }
+            saveData();
+            renderCourses();
+        }
+
+        function showTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+            document.getElementById(tab).classList.remove('hidden');
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            if (tab === 'students') { renderStudents(); renderLeaderboard(); }
+        }
+
+        function getCurrentStudents() { return students[currentCourseId] || []; }
+
+        function addStudent() {
+            const name = document.getElementById('newStudentName').value.trim();
+            if (!name) return showToast('❌ Ingresa un nombre');
+            const student = { id: Date.now(), name, points: 0, history: [] };
+            if (!students[currentCourseId]) students[currentCourseId] = [];
+            students[currentCourseId].push(student);
+            saveData();
+            document.getElementById('newStudentName').value = '';
+            renderStudents();
+            updateSelects();
+            renderLeaderboard();
+            showToast(`✅ ${name} agregado`);
+        }
+
+        function deleteStudent(id) {
+            const list = getCurrentStudents();
+            const s = list.find(x => x.id === id);
+            if (!confirm(`¿Eliminar a ${s.name}?`)) return;
+            students[currentCourseId] = list.filter(x => x.id !== id);
+            saveData();
+            renderStudents();
+            updateSelects();
+            renderLeaderboard();
+        }
+
+        function renderStudents() {
+            const container = document.getElementById('studentsList');
+            const list = getCurrentStudents();
+            if (!list.length) {
+                container.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div style="font-size:4em;">👻</div><p>Sin alumnos</p></div>';
+                return;
+            }
+            container.innerHTML = list.map(s => {
+                const badge = s.points >= 100 ? 'gold' : s.points >= 50 ? 'silver' : s.points >= 25 ? 'bronze' : null;
+                const badgeIcon = badge ? `<span class="badge badge-${badge}">${badge==='gold'?'🥇':badge==='silver'?'🥈':'🥉'}</span>` : '';
+                return `
+                    <div class="student-card">
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <div class="student-name">${s.name}${badgeIcon}</div>
+                            <button onclick="deleteStudent(${s.id})" style="background:#ff4757;color:white;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;">🗑️</button>
+                        </div>
+                        <div class="wallet"><div class="wallet-amount">${s.points}</div><div>puntos</div></div>
+                        <div class="actions">
+                            <button class="btn-add" onclick="quickAddPoints(${s.id},5)">+5</button>
+                            <button class="btn-add" onclick="quickAddPoints(${s.id},10)">+10</button>
+                            <button class="btn-sub" onclick="quickAddPoints(${s.id},-5)">-5</button>
+                        </div>
+                        <div class="history-list">
+                            ${s.history.slice(-3).map(h => `<div class="history-item ${h.points>0?'positive':'negative'}"><span>${h.concept}</span><strong>${h.points>0?'+':''}${h.points}</strong></div>`).join('') || '<div style="color:#999;font-size:0.9em;">Sin movimientos</div>'}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderLeaderboard() {
+            const container = document.getElementById('leaderboard');
+            const list = [...getCurrentStudents()].sort((a,b) => b.points - a.points).slice(0,5);
+            if (!list.length) { container.innerHTML = '<p style="text-align:center;">Sin datos</p>'; return; }
+            const medals = ['🥇','🥈','🥉','4️⃣','5️⃣'];
+            container.innerHTML = list.map((s,i) => `
+                <div class="leaderboard-item"><div class="leaderboard-rank">${medals[i]||i+1}</div><div style="flex:1;">${s.name}</div><div style="font-weight:bold;">${s.points} pts</div></div>
+            `).join('');
+        }
+
+        function updateSelects() {
+            const list = getCurrentStudents();
+            ['pointStudent','redeemStudent'].forEach(id => {
+                const sel = document.getElementById(id);
+                const val = sel.value;
+                sel.innerHTML = '<option value="">-- Seleccionar --</option>' + list.map(s => `<option value="${s.id}">${s.name} (${s.points} pts)</option>`).join('');
+                sel.value = val;
+            });
+            const rb = document.getElementById('redeemBenefit');
+            const rv = rb.value;
+            rb.innerHTML = '<option value="">-- Seleccionar --</option>' + benefits.map(b => `<option value="${b.id}">${b.name} (${b.cost} pts)</option>`).join('');
+            rb.value = rv;
+        }
+
+        function givePoints() {
+            const sid = document.getElementById('pointStudent').value;
+            const concept = document.getElementById('pointConcept').value.trim();
+            const amount = parseInt(document.getElementById('pointAmount').value);
+            if (!sid || !concept) return showToast('❌ Completa todos los campos');
+            addPoints(parseInt(sid), amount, concept);
+            document.getElementById('pointConcept').value = '';
+            document.getElementById('pointAmount').value = '10';
+            showToast(`✅ +${amount} puntos`);
+        }
+
+        function quickAddPoints(sid, amount) {
+            addPoints(sid, amount, amount > 0 ? 'Bonificación' : 'Descuento');
+            showToast(`${amount > 0 ? '+' : ''}${amount} puntos`);
+        }
+
+        function addPoints(sid, amount, concept) {
+            const list = getCurrentStudents();
+            const s = list.find(x => x.id === sid);
+            if (!s) return;
+            s.points += amount;
+            s.history.push({ date: new Date().toLocaleString('es-ES'), concept, points: amount });
+            if (!history[currentCourseId]) history[currentCourseId] = [];
+            history[currentCourseId].unshift({ date: new Date().toLocaleString('es-ES'), concept, points: amount, studentName: s.name });
+            saveData();
+        }
+
+        function quickActivity(concept, points) {
+            const sid = document.getElementById('pointStudent').value;
+            if (!sid) return showToast('❌ Selecciona un alumno');
+            addPoints(parseInt(sid), points, concept);
+            showToast(`✅ ${concept}: +${points}`);
+        }
+
+        function addPointsToAll(amount) {
+            getCurrentStudents().forEach(s => {
+                s.points += amount;
+                s.history.push({ date: new Date().toLocaleString('es-ES'), concept: 'Bonificación grupal', points: amount });
+                history[currentCourseId].unshift({ date: new Date().toLocaleString('es-ES'), concept: 'Bonificación grupal', points: amount, studentName: s.name });
+            });
+            saveData();
+            showToast(`✅ +${amount} a todos`);
+        }
+
+        function resetAllPoints() {
+            if (!confirm('¿Resetear TODO?')) return;
+            getCurrentStudents().forEach(s => { s.points = 0; s.history = []; });
+            history[currentCourseId] = [];
+            saveData();
+            showToast('🔄 Reseteado');
+        }
+
+        function renderBenefits() {
+            const container = document.getElementById('benefitsList');
+            container.innerHTML = benefits.map(b => `
+                <div class="benefit-card">
+                    <div><h3 style="margin-bottom:5px;">${b.name}</h3><p style="color:#666;font-size:0.9em;">${b.desc}</p></div>
+                    <div><span class="benefit-cost">${b.cost} pts</span><button onclick="deleteBenefit(${b.id})" style="margin-left:10px;padding:5px 10px;font-size:12px;background:#eb3349;color:white;border:none;border-radius:5px;cursor:pointer;">🗑️</button></div>
+                </div>
+            `).join('');
+            updateSelects();
+        }
+
+        function addBenefit() {
+            const name = document.getElementById('benefitName').value.trim();
+            const desc = document.getElementById('benefitDesc').value.trim();
+            const cost = parseInt(document.getElementById('benefitCost').value);
+            if (!name || !desc) return showToast('❌ Completa todos los campos');
+            benefits.push({ id: Date.now(), name, desc, cost });
+            saveData();
+            document.getElementById('benefitName').value = '';
+            document.getElementById('benefitDesc').value = '';
+            document.getElementById('benefitCost').value = '50';
+            showToast('✅ Beneficio agregado');
+        }
+
+        function deleteBenefit(id) {
+            if (!confirm('¿Eliminar?')) return;
+            benefits = benefits.filter(b => b.id !== id);
+            saveData();
+        }
+
+        function redeemBenefit() {
+            const sid = parseInt(document.getElementById('redeemStudent').value);
+            const bid = parseInt(document.getElementById('redeemBenefit').value);
+            if (!sid || !bid) return showToast('❌ Selecciona alumno y beneficio');
+            const s = getCurrentStudents().find(x => x.id === sid);
+            const b = benefits.find(x => x.id === bid);
+            if (s.points < b.cost) return showToast(`❌ Necesita ${b.cost} puntos`);
+            s.points -= b.cost;
+            s.history.push({ date: new Date().toLocaleString('es-ES'), concept: `Canje: ${b.name}`, points: -b.cost });
+            history[currentCourseId].unshift({ date: new Date().toLocaleString('es-ES'), concept: `Canje: ${b.name}`, points: -b.cost, studentName: s.name });
+            saveData();
+            showToast(`🎉 ¡${s.name} canjeó ${b.name}!`);
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('fullHistory');
+            const list = history[currentCourseId] || [];
+            if (!list.length) { container.innerHTML = '<div class="empty-state"><div style="font-size:4em;">📭</div><p>Sin movimientos</p></div>'; return; }
+            container.innerHTML = list.map(h => `
+                <div class="history-item ${h.points>0?'positive':'negative'}" style="padding:15px;border-bottom:1px solid #eee;">
+                    <div><strong>${h.studentName}</strong><div style="font-size:0.9em;color:#666;">${h.concept}</div><div style="font-size:0.8em;color:#999;">${h.date}</div></div>
+                    <div style="font-size:1.2em;font-weight:bold;">${h.points>0?'+':''}${h.points}</div>
+                </div>
+            `).join('');
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
+
+        // Iniciar
+        document.addEventListener('DOMContentLoaded', loadData);
+    </script>
+</body>
+</html>
